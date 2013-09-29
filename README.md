@@ -2,7 +2,6 @@ rcCAr
 ====================================
 
 
-
 rcCar mikrokontroller
 ------
 Az rcCar-hoz tartozó STM32F4-Discovery típusú mikrokontrolleren futó program
