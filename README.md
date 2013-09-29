@@ -1,25 +1,13 @@
-STM32F4-Discovery with Android ADK
+rcCAr
 ====================================
 
-Android Open Accessory(ADK) firmware for STM32F4-Discovery
 
-This project is an experimental yet.
 
-Build
+rcCar mikrokontroller
 ------
-You can build with Atollic TrueSTUDIO/STM32 Lite.
+Az rcCar STM32F4-Discovery típusú mikrokontrolleren futó program
 
-Sample Android App is [here](https://github.com/YuuichiAkagawa/HelloADK)
-
-Misc info
----------
-+ UART debug out port is PA2 @230400bps
-
-License
--------
-Copyright &copy; 2012 Yuuichi Akagawa
-
-Licensed under the [Apache License, Version 2.0][Apache]
-
-[Apache]: http://www.apache.org/licenses/LICENSE-2.0
+------
+USB kommunikáció:
+ [github.com/YuuichiAkagawa/STM32F4_ADK](https://github.com/YuuichiAkagawa/STM32F4_ADK)
 
