@@ -5,7 +5,7 @@ rcCAr
 
 rcCar mikrokontroller
 ------
-Az rcCar STM32F4-Discovery típusú mikrokontrolleren futó program
+Az rcCar-hoz tartozó STM32F4-Discovery típusú mikrokontrolleren futó program
 
 ------
 USB kommunikáció:
