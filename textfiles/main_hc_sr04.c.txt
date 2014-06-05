@@ -1,0 +1,72 @@
+//--------------------------------------------------------------
+// File     : main.c
+// Datum    : 22.12.2013
+// Version  : 1.0
+// Autor    : UB
+// EMail    : mc-4u(@)t-online.de
+// Web      : www.mikrocontroller-4u.de
+// CPU      : STM32F4
+// IDE      : CooCox CoIDE 1.7.4
+// GCC      : 4.7 2012q4
+// Module   : CMSIS_BOOT, M4_CMSIS_CORE
+// Funktion : Demo der HC-SR04-Library
+// Hinweis  : Diese zwei Files muessen auf 8MHz stehen
+//              "cmsis_boot/stm32f4xx.h"
+//              "cmsis_boot/system_stm32f4xx.c"
+//--------------------------------------------------------------
+
+#include "stm32f4xx.h"
+#include "stm32_ub_hcsr04.h"
+#include "stm32f4_discovery.h"
+
+void delay_ms(__IO unsigned long ms);
+
+int main(void) {
+	float abstand;
+
+	SystemInit(); // Quarz Einstellungen aktivieren
+
+	// init vom HC-SR04
+	UB_HCSR04_Init();
+
+	STM_EVAL_LEDInit(LED3);
+	STM_EVAL_LEDInit(LED4);
+	STM_EVAL_LEDInit(LED5);
+	STM_EVAL_LEDInit(LED6);
+
+	while (1) {
+
+		STM_EVAL_LEDOff(LED3);
+		STM_EVAL_LEDOff(LED4);
+		STM_EVAL_LEDOff(LED5);
+		STM_EVAL_LEDOff(LED6);
+
+		// Messung vom Abstand
+		abstand = UB_HCSR04_Distance_cm();
+		if (abstand < 100) {
+			// LEDs je nach Entfernung schalten
+			STM_EVAL_LEDOn(LED3); // narancs
+		} else if (abstand < 200) {
+			// außerhalb vom Messbereich
+			STM_EVAL_LEDOn(LED4); // zold
+		} else if (abstand < 300) {
+			// außerhalb vom Messbereich
+			STM_EVAL_LEDOn(LED5); /// piros
+		}
+		else  {
+			// außerhalb vom Messbereich
+			STM_EVAL_LEDOn(LED6); //kék
+		}
+
+		delay_ms(500);
+
+
+	}
+}
+
+void delay_ms(__IO unsigned long ms) {
+	volatile unsigned long i, j;
+	for (i = 0; i < ms; i++)
+		for (j = 0; j < 3442; j++)
+			;
+}
