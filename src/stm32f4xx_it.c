@@ -74,6 +74,7 @@ void EXTI0_IRQHandler(void) {
 	}
 
 }
+
 void USART2_IRQHandler(void) {
 	static int rx_index = 0;
 	if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) {

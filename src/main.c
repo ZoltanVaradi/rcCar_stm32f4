@@ -100,9 +100,6 @@ void TIM3_Config(void) {
 }
 
 void TIM3_Init(void) {
-	uint16_t PrescalerValue = 0;
-	uint32_t pulse = 2000;
-	PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 2800000) - 1;
 
 	/* Time base configuration */
 	TIM_TimeBaseStructure.TIM_Prescaler = 84; // pers 33.6 -> 0,2us-enkét jön ide egy órajel
@@ -167,24 +164,6 @@ int main(void) {
 	/* Infinite loop */
 	while (1) {
 		i++;
-
 	}
 }
 
-/*
- * Callback used by stm32f4_discovery_audio_codec.c.
- * Refer to stm32f4_discovery_audio_codec.h for more info.
- */
-void EVAL_AUDIO_TransferComplete_CallBack(uint32_t pBuffer, uint32_t Size) {
-	/* TODO, implement your code here */
-	return;
-}
-
-/*
- * Callback used by stm324xg_eval_audio_codec.c.
- * Refer to stm324xg_eval_audio_codec.h for more info.
- */
-uint16_t EVAL_AUDIO_GetSampleCallBack(void) {
-	/* TODO, implement your code here */
-	return -1;
-}
