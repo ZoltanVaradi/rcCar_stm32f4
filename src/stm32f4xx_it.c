@@ -32,45 +32,42 @@
 #include "stm32f4xx_usart.h"
 #include "stm32f4_discovery.h"
 #include <stdlib.h>
+#include "rccar/inc/stm32_ub_hcsr04.h"
+#include "rccar/inc/init.h"
+
+#define ECHO_NO_REPLAY_COUNT_MAX 1
 
 char StringLoop[0xFF];
-
-int putcharx(uint16_t ch) {
-	while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET)
-		;
-	USART_SendData(USART2, ch);
-	return ch;
-}
 
 int echoIndex = 0;
 int echoNoReplyCount = 0;
 
-int sendString(char *str) {
-	int i = 0;
-	char c;
-	int len = strlen(str);
-	for (i = 0; i < len; i++) {
-		c = str[i];
-		if (c == '\0') {
-			break;
-		}
-		putcharx(c);
-	}
-
-	return 1;
-}
+int fordulasokSzama = 0;
 
 void EXTI0_IRQHandler(void) {
+
 	if (EXTI_GetITStatus(EXTI_Line0) != RESET) {
-		/* Sending a single character */
-		uint16_t sendchar = 0x12;
-		USART_SendData(USART2, 'r'); //in: stm32f4xx_usart.h
+		/* Toggle LED4 */
+		STM_EVAL_LEDToggle(LED4);
+
+	//	fordulasokSzama++;
 
 		/* Clear the EXTI line 0 pending bit */
 		EXTI_ClearITPendingBit(EXTI_Line0);
+	}
 
-		USART_SendData(USART2, 't'); //in: stm32f4xx_usart.h
+}
 
+void EXTI9_5_IRQHandler(void) {
+
+	if (EXTI_GetITStatus(EXTI_Line6) != RESET) {
+		/* Toggle LED4 */
+		STM_EVAL_LEDToggle(LED4);
+
+		fordulasokSzama++;
+
+		/* Clear the EXTI line 0 pending bit */
+		EXTI_ClearITPendingBit(EXTI_Line6);
 	}
 
 }
@@ -80,26 +77,33 @@ void USART2_IRQHandler(void) {
 	if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) {
 		StringLoop[rx_index++] = USART_ReceiveData(USART2);
 
-		if ((rx_index - 2) > -1) {
-			//0x19 = 25b
-			if (StringLoop[rx_index - 2] == 0x64
-					&& StringLoop[rx_index - 1] < 0x33) {
-				TIM3->CCR2 = 2000 / 50 * StringLoop[rx_index - 1];  //PC7
-				STM_EVAL_LEDToggle(LED4);
-			}
+		if (echoNoReplyCount <= ECHO_NO_REPLAY_COUNT_MAX) {
 
-			if (StringLoop[rx_index - 2] == 0x65
-					&& StringLoop[rx_index - 1] < 0x33) {
+			if ((rx_index - 2) > -1) {
+				//0x19 = 25b
+				if (StringLoop[rx_index - 2] == 0x64
+						&& StringLoop[rx_index - 1] < 90) {
+					TIM3->CCR2 = (((2000 - 1000) / 90)
+							* StringLoop[rx_index - 1]) + 1000;   //PC7
+					STM_EVAL_LEDToggle(LED4);
+				}
 
-				TIM3->CCR1 = 2000 / 50 * StringLoop[rx_index - 1]; //PC6 //  ((rangeMax-rangeMin)/(xMax-xMin))*(x-xMin)+rangeMin
-				STM_EVAL_LEDToggle(LED3);
-			}
+				if (StringLoop[rx_index - 2] == 0x65
+						&& StringLoop[rx_index - 1] < 90) {
 
-			if (StringLoop[rx_index - 2] == 0x66
-					&& StringLoop[rx_index - 1] == 0x02) {
-				echoNoReplyCount = 0;
+					TIM3->CCR1 = (((2000 - 1000) / 90)
+							* StringLoop[rx_index - 1]) + 1000; //PC6 //  ((rangeMax-rangeMin)/(xMax-xMin))*(x-xMin)+rangeMin
+					STM_EVAL_LEDToggle(LED3);
+				}
+
 			}
 		}
+
+		if (StringLoop[rx_index - 2] == 0x66
+				&& StringLoop[rx_index - 1] == 0x02) {
+			echoNoReplyCount = 0;
+		}
+
 		if (rx_index >= (sizeof(StringLoop) - 1)) //StringLoop
 			rx_index = 0;
 		STM_EVAL_LEDOff(LED6);
@@ -107,10 +111,30 @@ void USART2_IRQHandler(void) {
 }
 
 void TIM2_IRQHandler(void) {
+
+	if (TIM_GetITStatus(TIM2, TIM_IT_CC1) == SET) {
+		//--------------------------------------------------------------
+		// ISR von Timer2
+		// wird bei Lo-Flanke vom Echo-Signal aufgerufen
+		//--------------------------------------------------------------
+		uint32_t start, stop;
+		// Interrupt Flags loeschen
+		TIM_ClearITPendingBit(TIM2, TIM_IT_CC1);
+
+		//-----------------------------------
+		// Messwerte auslesen
+		//-----------------------------------
+		start = TIM_GetCapture1(TIM2);
+		stop = TIM_GetCapture2(TIM2);
+		HCSR04.delay_us = start - stop;
+		HCSR04.t2_akt_time++;
+	}
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET) {
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
+		int tavolsag = fordulasokSzama * KEREK_ATMERO;
+		fordulasokSzama=0;
 
-		if (echoNoReplyCount > 1) {
+		if (echoNoReplyCount > ECHO_NO_REPLAY_COUNT_MAX) {
 			STM_EVAL_LEDOn(LED6);
 			TIM3->CCR1 = 1500;
 			TIM3->CCR2 = 1500;
@@ -125,8 +149,21 @@ void TIM2_IRQHandler(void) {
 		sendString(msg);
 
 		++echoIndex;
-
 		++echoNoReplyCount;
+
+		//------------------------------  tavolsg----------------------------------
+
+		char msgT[16];
+		char msgPrer[16];
+		char *echokeyr = "$dist,";
+
+		snprintf(msgPrer, sizeof msgPrer, "%s%d", echokeyr, tavolsag);
+
+		char chsumt = getCheckSum(msgPrer);
+
+		snprintf(msgT, sizeof msgT, "%s%c%c", msgPrer, cs, chsumt);
+
+		sendString(msgT);
 	}
 }
 /**
